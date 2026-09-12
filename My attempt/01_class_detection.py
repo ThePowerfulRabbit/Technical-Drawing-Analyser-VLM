@@ -1,6 +1,6 @@
 import ollama
 
-image_path = "image/002_redacted.png"
+image_path = "image/004_redacted.png"
 
 response = ollama.chat(
     
@@ -8,11 +8,13 @@ response = ollama.chat(
     messages = [
         {
             "role" : "user",
-            "content": "Analyze this engineering drawing",
+            "content": "What type of component is shown in this engineering drawing? Answer with only the class.",
             "images" : [image_path]
         }
     ]
     
 )
 
-print("Response:", response)
+message = response["message"]
+content = message["content"]
+print(content)
