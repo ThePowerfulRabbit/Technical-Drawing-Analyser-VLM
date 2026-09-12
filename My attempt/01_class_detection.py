@@ -1,6 +1,6 @@
 import ollama
 
-image_path = "image/004_redacted.png"
+image_path = "image/001_without_table.png"
 
 response = ollama.chat(
     
@@ -8,7 +8,7 @@ response = ollama.chat(
     messages = [
         {
             "role" : "user",
-            "content": "What type of component is shown in this engineering drawing? Answer with only the class.",
+            "content": "Classify the component shown in this engineering drawing. Answer with only its class: Sheet or Tube",
             "images" : [image_path]
         }
     ]
