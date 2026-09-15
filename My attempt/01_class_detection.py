@@ -1,4 +1,5 @@
 import ollama
+import json
 
 image_path = "image/001_without_table.png"
 
@@ -26,5 +27,20 @@ response = ollama.chat(
 # content = message["content"] # retrieve information associated with "content" key
 # print(content)
 
-#or i can just do this:
+# or i can just do this:
 print(response["message"]["content"])
+# output:
+# {
+#   "class": "Sheet"
+# }
+# Now lets try to extract the class name from this output and store it in a variable
+
+# right now the output is a string, we will first parse the JSON string into python dictionary
+
+json_data = json.loads(response["message"]["content"])
+
+drawing_class = json_data["class"]
+
+print("Class output:", drawing_class)
+# Class output: Sheet 
+# Now we can easily ask the model to give more output while still being able to store class data in a separate variable
