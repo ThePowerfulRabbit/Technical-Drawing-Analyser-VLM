@@ -37,9 +37,9 @@ print(response["message"]["content"])
 
 # right now the output is a string, we will first parse the JSON string into python dictionary
 
-json_data = json.loads(response["message"]["content"])
+json_data = json.loads(response["message"]["content"]) # Here we are converting the content of "content"(which is a string in json format) in to python dictionary
 
-drawing_class = json_data["class"]
+drawing_class = json_data["class"] # so now we can index the value of the key "class" and store it in a variable
 
 print("Class output:", drawing_class)
 # Class output: Sheet 
