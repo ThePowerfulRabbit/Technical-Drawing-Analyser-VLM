@@ -17,8 +17,22 @@ response = ollama.chat(
                             - title_block: the drawing information block.
                             
                             For each region that is actually present, return a tight bounding box around that region.
+                            
+                            return a separate bounding box for each individual view.
+                            the output should look like: 
+                            {
+                                "flat_pattern": [],
+                                "orthographic_view": [
+                                    [something, something, something, something],
+                                    [something, something, something, something]
+                                ],
+                                "isometric_view": [],
+                                "section_view": [],
+                                "title_block": [
+                                    [something, something, something, something]
+                                ]
+                            }
                             Do not classify an ordinary orthographic view as a flat_pattern.
-                            Do not return regions that are not present.
                             
                             Bounding box format: [x0, y0, x1, y1].
                             Coordinates must be normalized from 0 to 1000.
@@ -45,11 +59,8 @@ response = ollama.chat(
 #we want to access the content only
 
 print(repr(response["message"]["content"])) #repr() is used to display any empty strings as output
-# current output: 
-# '{\n    "flat_pattern": [100, 100, 900, 700],\n    "orthographic_view": [100, 100, 900, 700],\n    "isometric_view": [],\n    "section_view": [],\n    "title_block": [100, 700, 900, 900]\n}'
 
-#now lets parse the json and store the coordinates in new variables
-
+# now lets parse the json and store the coordinates in new variables
 json_data = json.loads(response["message"]["content"])
 
 flat_pattern = json_data["flat_pattern"]
