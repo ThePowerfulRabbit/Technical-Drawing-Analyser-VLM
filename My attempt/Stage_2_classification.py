@@ -1,7 +1,7 @@
 import ollama
 import json
 
-image_path = "image/001_without_table.png"
+image_path = "Screenshots/001_without_table.png"
 
 response = ollama.chat(
     

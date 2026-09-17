@@ -1,7 +1,20 @@
 import ollama
 import json
+import pymupdf
 
-image_path = "image/002_redacted.png"
+# Importing the pdf: (Refer to the pymupdf cheatsheet inside the cheatsheet folder for references)
+input_pdf_path = "Input_pdfs/002_redacted.pdf"
+pdf = pymupdf.open(input_pdf_path)
+
+page = pdf[0] #first page
+
+pix = page.get_pixmap(dpi = 200) #increasing pixel density with dpi = 200 to give the model more detailed image
+pix.save("Input_images/page_0.png")
+pdf.close()
+
+image_path = "Input_images/page_0.png"
+
+
 print("Sending image to model...")
 response = ollama.chat(
     model = "qwen3-vl:8b-instruct", #changing the model to tne instruct varient because the normal one just kept thinking and did nothing other than thinking
