@@ -1,6 +1,7 @@
 import ollama
 import json
 import pymupdf
+import cv2
 
 # Importing the pdf: (Refer to the pymupdf cheatsheet inside the cheatsheet folder for references)
 input_pdf_path = "Input_pdfs/002_redacted.pdf"
@@ -9,10 +10,10 @@ pdf = pymupdf.open(input_pdf_path)
 page = pdf[0] #first page
 
 pix = page.get_pixmap(dpi = 200) #increasing pixel density with dpi = 200 to give the model more detailed image
-pix.save("Input_images/page_0.png")
+pix.save("images/page_0.png")
 pdf.close()
 
-image_path = "Input_images/page_0.png"
+image_path = "images/page_0.png"
 
 
 print("Sending image to model...")
@@ -32,6 +33,8 @@ response = ollama.chat(
                             For each region that is actually present, return a tight bounding box around that region.
                             
                             return a separate bounding box for each individual view.
+                            if there are multilple objects with same region types, make a separate bounding box for that region under the same category
+                            if any region is missing, dont skip it, return empty value for that region
                             the output should look like: 
                             {
                                 "flat_pattern": [],
@@ -89,3 +92,33 @@ print("Orthographic View:", orthographic_view )
 print("Isometric View:", isometric_view)
 print("Section View", section_view)
 print("Title Block", title_block)
+
+image = cv2.imread(image_path) # read the image converted from pdf input to get image width and image height
+image_height, image_width, channels = image.shape  #image.shape returns [height, width, channels]
+
+# print("Image height:",image_height)
+# print("Image width:",image_width)
+
+# Now lets make a function for changing the normalized bounding box coordinates to pixel values
+
+def normalized_to_pixel(image_height, image_width, bounding_box):
+    # since bounding_box is a list with 4 coordinates in form [x0,y0,x1,y1]
+    x0,y0,x1,y1 = bounding_box
+    
+    #lets scale them from 0-1000 to 0-image_width and 0-image_height
+    x0 = (x0/1000) * image_width
+    y0 = (y0/1000) * image_height
+    x1 = (x1/1000) * image_width
+    y1 = (y1/1000) * image_height
+    
+    return [x0,y0,x1,y1]
+
+#lets scale the coordinates and crop the image right at these coordinates
+# opencv can directly crop and save the images with this function: crop = image[y0:y1, x0:x1]
+
+#first lets normaize the bounding boxes into pixel coordinates:
+flat_pattern_pixel_bounding_box = normalized_to_pixel(image_height, image_width, flat_pattern)
+orthographic_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, orthographic_view)
+isometric_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, isometric_view)
+section_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, section_view)
+title_block_pixel_bounding_box = normalized_to_pixel(image_height, image_width, title_block)
