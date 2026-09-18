@@ -101,17 +101,22 @@ image_height, image_width, channels = image.shape  #image.shape returns [height,
 
 # Now lets make a function for changing the normalized bounding box coordinates to pixel values
 
-def normalized_to_pixel(image_height, image_width, bounding_box):
-    # since bounding_box is a list with 4 coordinates in form [x0,y0,x1,y1]
-    x0,y0,x1,y1 = bounding_box
+def normalized_to_pixel(image_height, image_width, bounding_boxes):
+    # since bounding_boxes is a collection of list each with 4 coordinates in form [x0,y0,x1,y1]
+    boxes = []
     
-    #lets scale them from 0-1000 to 0-image_width and 0-image_height
-    x0 = (x0/1000) * image_width
-    y0 = (y0/1000) * image_height
-    x1 = (x1/1000) * image_width
-    y1 = (y1/1000) * image_height
-    
-    return [x0,y0,x1,y1]
+    for i in range(0, len(bounding_boxes)):
+        bounding_box = bounding_boxes[i]
+        x0,y0,x1,y1 = bounding_box
+        
+        #lets scale them from 0-1000 to 0-image_width and 0-image_height
+        x0 = (x0/1000) * image_width
+        y0 = (y0/1000) * image_height
+        x1 = (x1/1000) * image_width
+        y1 = (y1/1000) * image_height
+        boxes.append([x0,y0,x1,y1])   
+
+    return boxes
 
 #lets scale the coordinates and crop the image right at these coordinates
 # opencv can directly crop and save the images with this function: crop = image[y0:y1, x0:x1]
@@ -122,3 +127,10 @@ orthographic_view_pixel_bounding_box = normalized_to_pixel(image_height, image_w
 isometric_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, isometric_view)
 section_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, section_view)
 title_block_pixel_bounding_box = normalized_to_pixel(image_height, image_width, title_block)
+
+
+print("flat_pattern_pixel_bounding_box:",flat_pattern_pixel_bounding_box)
+print("orthographic_view_pixel_bounding_box:",orthographic_view_pixel_bounding_box)
+print("isometric_view_pixel_bounding_box:",isometric_view_pixel_bounding_box)
+print("section_view_pixel_bounding_box:",section_view_pixel_bounding_box)
+print("title_block_pixel_bounding_box:",title_block_pixel_bounding_box)
