@@ -128,9 +128,18 @@ isometric_view_pixel_bounding_box = normalized_to_pixel(image_height, image_widt
 section_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, section_view)
 title_block_pixel_bounding_box = normalized_to_pixel(image_height, image_width, title_block)
 
-
 print("flat_pattern_pixel_bounding_box:",flat_pattern_pixel_bounding_box)
 print("orthographic_view_pixel_bounding_box:",orthographic_view_pixel_bounding_box)
 print("isometric_view_pixel_bounding_box:",isometric_view_pixel_bounding_box)
 print("section_view_pixel_bounding_box:",section_view_pixel_bounding_box)
 print("title_block_pixel_bounding_box:",title_block_pixel_bounding_box)
+
+# output
+# flat_pattern_pixel_bounding_box: []
+# orthographic_view_pixel_bounding_box: [[165.4, 233.9, 827.0, 1520.3500000000001], [1075.1000000000001, 233.9, 1240.5, 1520.3500000000001]]
+# isometric_view_pixel_bounding_box: []
+# section_view_pixel_bounding_box: []
+# title_block_pixel_bounding_box: [[165.4, 1754.25, 1571.3, 2222.0499999999997]]
+
+# the current output is in float values, we need to convert them into integer values for cropping the image
+
