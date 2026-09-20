@@ -85,13 +85,21 @@ isometric_view = json_data["isometric_view"]
 section_view = json_data["section_view"]
 title_block = json_data["title_block"]
 
-# parsed output:
-print("Parsed Output:")
-print("Flat Pattern:", flat_pattern)
-print("Orthographic View:", orthographic_view )
-print("Isometric View:", isometric_view)
-print("Section View", section_view)
-print("Title Block", title_block)
+# # parsed output:
+# print("Parsed Output:")
+# print("Flat Pattern:", flat_pattern)
+# print("Orthographic View:", orthographic_view )
+# print("Isometric View:", isometric_view)
+# print("Section View", section_view)
+# print("Title Block", title_block)
+
+# Output:
+# Parsed Output:
+# Flat Pattern: []
+# Orthographic View: [[100, 100, 500, 650], [650, 100, 750, 650]]
+# Isometric View: []
+# Section View []
+# Title Block [[100, 750, 950, 950]]
 
 image = cv2.imread(image_path) # read the image converted from pdf input to get image width and image height
 image_height, image_width, channels = image.shape  #image.shape returns [height, width, channels]
@@ -114,14 +122,13 @@ def normalized_to_pixel(image_height, image_width, bounding_boxes):
         y0 = (y0/1000) * image_height
         x1 = (x1/1000) * image_width
         y1 = (y1/1000) * image_height
-        boxes.append([x0,y0,x1,y1])   
-
+        boxes.append([int(x0),int(y0),int(x1),int(y1)])  #typecasting to int because pixel coordinates must be integers
     return boxes
 
-#lets scale the coordinates and crop the image right at these coordinates
+# lets scale the coordinates and crop the image right at these coordinates
 # opencv can directly crop and save the images with this function: crop = image[y0:y1, x0:x1]
 
-#first lets normaize the bounding boxes into pixel coordinates:
+# first lets normaize the bounding boxes into pixel coordinates:
 flat_pattern_pixel_bounding_box = normalized_to_pixel(image_height, image_width, flat_pattern)
 orthographic_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, orthographic_view)
 isometric_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, isometric_view)
@@ -134,12 +141,8 @@ print("isometric_view_pixel_bounding_box:",isometric_view_pixel_bounding_box)
 print("section_view_pixel_bounding_box:",section_view_pixel_bounding_box)
 print("title_block_pixel_bounding_box:",title_block_pixel_bounding_box)
 
-# output
-# flat_pattern_pixel_bounding_box: []
-# orthographic_view_pixel_bounding_box: [[165.4, 233.9, 827.0, 1520.3500000000001], [1075.1000000000001, 233.9, 1240.5, 1520.3500000000001]]
-# isometric_view_pixel_bounding_box: []
-# section_view_pixel_bounding_box: []
-# title_block_pixel_bounding_box: [[165.4, 1754.25, 1571.3, 2222.0499999999997]]
+# now lets crop the images and save them in the output folder
+x0, y0, x1, y1 = title_block_pixel_bounding_box[0] #since there is only one title block, we can directly access the first element of the list
+crop = image[y0:y1, x0:x1]
 
-# the current output is in float values, we need to convert them into integer values for cropping the image
-
+cv2.imwrite("Stage_1_Output_cropped_images/title_block_cropped.png", crop) #saving the cropped image in the output folder
