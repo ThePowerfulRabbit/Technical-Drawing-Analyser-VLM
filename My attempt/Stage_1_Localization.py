@@ -33,6 +33,8 @@ response = ollama.chat(
                             For each region that is actually present, return a tight bounding box around that region.
                             
                             return a separate bounding box for each individual view.
+                            ensure that each element lies in the middle of the bounding box.
+                            
                             if there are multilple objects with same region types, make a separate bounding box for that region under the same category
                             if any region is missing, dont skip it, return empty value for that region
                             the output should look like: 
