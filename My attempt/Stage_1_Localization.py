@@ -61,7 +61,7 @@ response = ollama.chat(
     format = "json",
     
     options = {
-        "num_ctx" : 8192, # image + text prompt + model's output must all fit within 8192 tokens combined. i consume more vram when i increase this number
+        "num_ctx" : 8192, # image + text prompt + model's output must all fit within 8192 tokens combined. it consumes more vram when i increase this number
         "temperature" : 0
         # "num_predict" : 4000 #this limit is the output token limiter. It limits the maximum token use for generating output
     }
@@ -141,8 +141,25 @@ print("isometric_view_pixel_bounding_box:",isometric_view_pixel_bounding_box)
 print("section_view_pixel_bounding_box:",section_view_pixel_bounding_box)
 print("title_block_pixel_bounding_box:",title_block_pixel_bounding_box)
 
-# now lets crop the images and save them in the output folder
-x0, y0, x1, y1 = title_block_pixel_bounding_box[0] #since there is only one title block, we can directly access the first element of the list
-crop = image[y0:y1, x0:x1]
+# # now lets crop the images and save them in the output folder
+# x0, y0, x1, y1 = title_block_pixel_bounding_box[0] #since there is only one title block, we can directly access the first element of the list
+# crop = image[y0:y1, x0:x1]
 
-cv2.imwrite("Stage_1_Output_cropped_images/title_block_cropped.png", crop) #saving the cropped image in the output folder
+# cv2.imwrite("Stage_1_Output_cropped_images/title_block_cropped.png", crop) #saving the cropped image in the output folder
+
+# now lets make a generic crop function that can work for lists with multiple bounding boxes and also for the ones with empty lists
+
+def crop_and_save_image(bounding_boxes, image_name):
+    for i in range (len(bounding_boxes)):
+        bounding_box = bounding_boxes[i]
+        x0,y0,x1,y1 = bounding_box
+        
+        crop = image [y0:y1, x0:x1]
+        cv2.imwrite(f"Stage_1_Output_cropped_images/{image_name}_{i+1}.png", crop)
+
+
+crop_and_save_image(flat_pattern_pixel_bounding_box, "flat_pattern_pixel_bounding_box")
+crop_and_save_image(orthographic_view_pixel_bounding_box, "orthographic_view_pixel_bounding_box")
+crop_and_save_image(isometric_view_pixel_bounding_box, "isometric_view_pixel_bounding_box")
+crop_and_save_image(section_view_pixel_bounding_box, "section_view_pixel_bounding_box") 
+crop_and_save_image(title_block_pixel_bounding_box, "title_block_pixel_bounding_box")
