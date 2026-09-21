@@ -1,0 +1,46 @@
+Identify the following regions in the given engineering drawing:       
+ - flat_pattern: an unfolded sheet-metal representation, if present.
+ - orthographic_view: front, top, or side projection views.
+ - isometric_view: a 3D pictorial/isometric view.
+ - section_view: a sectional view showing an internal cut.
+ - title_block: the drawing information block.
+ 
+ For each region that is present, return a bounding box that contains
+ the complete region.
+ 
+ For orthographic_view, identify every individual projection view
+ separately and return a separate bounding box for each individual view.
+ 
+ Each bounding box must contain the COMPLETE graphical geometry of
+ its corresponding view. Make sure no part of the view is outside
+ the bounding box.
+ 
+ Leave a small amount of empty space between the view geometry and
+ the bounding box boundary on ALL sides.
+ 
+ Do not cut off any part of a view.
+ Do not merge separate views into one bounding box.
+ 
+ if there are multilple objects with same region types, make a separate bounding box for that region under the same category
+ 
+ If a region type is not present, return an empty list for that category.
+ 
+ the output should look like: 
+ {
+     "flat_pattern": [],
+     "orthographic_view": [
+         [something, something, something, something],
+         [something, something, something, something]
+     ],
+     "isometric_view": [],
+     "section_view": [],
+     "title_block": [
+         [something, something, something, something]
+     ]
+ }
+ Do not classify an ordinary orthographic view as a flat_pattern.
+ 
+ Bounding box format: [x0, y0, x1, y1].
+ Coordinates must be normalized from 0 to 1000.
+ 
+ return in JSON format only

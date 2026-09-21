@@ -15,6 +15,10 @@ pdf.close()
 
 image_path = "images/page_0.png"
 
+#lets read the prompt text from a separate file as its getting a bit cluttered here:
+file = open("Prompts/localization.txt", "r")
+prompt = file.read()
+file.close()
 
 print("Sending image to model...")
 response = ollama.chat(
@@ -22,41 +26,7 @@ response = ollama.chat(
     messages = [
         {
             "role" : "user",
-            "content" : """Identify the following regions in the given engineering drawing:
-            
-                            - flat_pattern: an unfolded sheet-metal representation, if present.
-                            - orthographic_view: front, top, or side projection views.
-                            - isometric_view: a 3D pictorial/isometric view.
-                            - section_view: a sectional view showing an internal cut.
-                            - title_block: the drawing information block.
-                            
-                            For each region that is actually present, return a tight bounding box around that region.
-                            
-                            return a separate bounding box for each individual view.
-                            ensure that each element lies in the middle of the bounding box.
-                            
-                            if there are multilple objects with same region types, make a separate bounding box for that region under the same category
-                            if any region is missing, dont skip it, return empty value for that region
-                            the output should look like: 
-                            {
-                                "flat_pattern": [],
-                                "orthographic_view": [
-                                    [something, something, something, something],
-                                    [something, something, something, something]
-                                ],
-                                "isometric_view": [],
-                                "section_view": [],
-                                "title_block": [
-                                    [something, something, something, something]
-                                ]
-                            }
-                            Do not classify an ordinary orthographic view as a flat_pattern.
-                            
-                            Bounding box format: [x0, y0, x1, y1].
-                            Coordinates must be normalized from 0 to 1000.
-                            
-                            return in JSON format only""",
-                            
+            "content" :prompt,
             "images": [image_path]
         }
     ],
