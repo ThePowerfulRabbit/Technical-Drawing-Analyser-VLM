@@ -36,6 +36,17 @@ response = ollama.chat(
                         4. "section_view": Sectional view of a component showing an internal cut.
                         5. "flat_pattern": Unfolded sheet metal layout views, if present.
                         
+                        When estimating the bounding box, prioritize COMPLETE CONTENT over a tight bounding box. 
+                        If uncertain whether a line belongs inside the region, include it rather than cropping it.
+                        
+                        For every detected region, the bounding box must extend slightly beyond the visible content of the region.
+                        Leave a small amount of empty whitespace between the outermost drawing content and every bounding-box boundary.
+                        Do NOT place the bounding-box boundary directly on the drawing geometry, dimension lines, arrows, or annotations.
+                        The margin should be large enough to ensure that no part of the drawing is clipped when the region is cropped, but should not unnecessarily include neighboring regions.
+                        
+                        For orthographic_view specifically, make sure the entire physical part, including all of its edges, is inside the bounding box with visible whitespace around it.
+                        For narrow orthographic views, do not make the bounding box tightly fit the narrow geometry. The bounding box should include sufficient horizontal whitespace on both sides so that the view is clearly visible as a standalone crop.
+                        
                         Only include a region if it is actually present in the image.
                         If multiple instances of the same region type are present, create a separate entry for each instance.
                         Do not stop after detecting one region. Inspect the entire page for all region types before returning the JSON.
