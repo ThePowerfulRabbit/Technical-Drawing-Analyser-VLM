@@ -29,26 +29,46 @@ response = ollama.chat(
             "content" :"""You are an expert engineering drawing parser.
                         Analyze this technical drawing image and detect ALL distinct visual components on the page.
                         
-                        Extract bounding boxes in 0-1000 normalized coordinates [ymin, xmin, ymax, xmax] for every instance of:
+                        Extract bounding boxes in 0-1000 normalized coordinates [x0, y0, x1, y1] for every instance of:
                         1. "title_block": The entire metadata table in the bottom-right corner (include revisions, tolerances, company logos).
                         2. "orthographic_view": 2D projected engineering views (front, top, side) including their surrounding dimension lines.
                         3. "isometric_view": 3D projected views of the component.
                         4. "section_view": Sectional view of a component showing an internal cut.
                         5. "flat_pattern": Unfolded sheet metal layout views, if present.
                         
-                        Return ONLY a valid JSON object matching this exact schema:
-                        {
-                          "regions": 
-                          [
-                            {
-                              "label": "title_block",
-                              "box": [x0, y0, x1, y1],
-                              "conf": 0.95
-                            }
-                          ]
-                        }""",
+                        Only include a region if it is actually present in the image.
+                        If multiple instances of the same region type are present, create a separate entry for each instance.
+                        Do not stop after detecting one region. Inspect the entire page for all region types before returning the JSON.
                         
-            "images": [image_path]
+                        Return ONLY a valid JSON object matching this exact schema:
+                          {
+                            "regions": [
+                              {
+                                "label": "title_block",
+                                "box": [x0, y0, x1, y1],
+                                "conf": 0.95
+                              },
+                              {
+                                "label": "orthographic_view",
+                                "box": [x0, y0, x1, y1],
+                                "conf": 0.95
+                              },
+                              {
+                                "label": "orthographic_view",
+                                "box": [x0, y0, x1, y1],
+                                "conf": 0.95
+                              },
+                              {
+                                "label": "section_view",
+                                "box": [x0, y0, x1, y1],
+                                "conf": 0.95
+                              }
+                            ]
+                          }
+                          
+                        """,
+                        
+            "images": [image_path]  
         }
     ],
     format = "json",
@@ -67,7 +87,7 @@ response = ollama.chat(
 #         content
 #we want to access the content only
 
-print(repr(response["message"]["content"])) #repr() is used to display any empty strings as output
+# print(repr(response["message"]["content"])) #repr() is used to display any empty strings as output
 
 # Output is: 
 # {
@@ -115,9 +135,10 @@ isometric_view_normalised_box = []
 section_view_normalised_box = []
 title_block_normalised_box = []
 
-for i in regions:
-  label = i["label"] # take the value of label of one particular dictionary in the list regions and store it in a separate variable
-  box = i["box"]
+# let's write a loop to cycle through all the output dictionries and store bounding boxes of each category to its own dedicated list
+for region in regions:
+  label = region["label"] # take the value of label of one particular dictionary in the list regions and store it in a separate variable
+  box = region["box"]
   
   if label == "orthographic_view":
     orthographic_view_normalised_box.append(box)
@@ -140,3 +161,57 @@ print("Orthographic View:", orthographic_view_normalised_box )
 print("Isometric View:", isometric_view_normalised_box)
 print("Section View", section_view_normalised_box)
 print("Title Block", title_block_normalised_box)
+
+image = cv2.imread(image_path) # read the image converted from pdf input to get image width and image height
+image_height, image_width, channels = image.shape  #image.shape returns [height, width, channels]
+
+# Now lets make a function for changing the normalized bounding box coordinates to pixel values
+def normalized_to_pixel(image_height, image_width, bounding_boxes):
+    # since bounding_boxes is a collection of list each with 4 coordinates in form [x0,y0,x1,y1]
+    boxes = []
+    
+    for i in range(0, len(bounding_boxes)):
+        bounding_box = bounding_boxes[i]
+        x0,y0,x1,y1 = bounding_box
+        
+        #lets scale them from 0-1000 to 0-image_width and 0-image_height
+        x0 = (x0/1000) * image_width
+        y0 = (y0/1000) * image_height
+        x1 = (x1/1000) * image_width
+        y1 = (y1/1000) * image_height
+        boxes.append([int(x0),int(y0),int(x1),int(y1)])  #typecasting to int because pixel coordinates must be integers
+    return boxes
+
+
+# lets scale the coordinates and crop the image right at these coordinates
+# opencv can directly crop and save the images with this function: crop = image[y0:y1, x0:x1]
+
+# first lets un-normailise the bounding boxes into pixel coordinates:
+flat_pattern_pixel_bounding_box = normalized_to_pixel(image_height, image_width, flat_pattern_normalised_box)
+orthographic_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, orthographic_view_normalised_box)
+isometric_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, isometric_view_normalised_box)
+section_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, section_view_normalised_box)
+title_block_pixel_bounding_box = normalized_to_pixel(image_height, image_width, title_block_normalised_box)
+
+# # now lets crop the images and save them in the output folder
+# x0, y0, x1, y1 = title_block_pixel_bounding_box[0] #since there is only one title block, we can directly access the first element of the list
+# crop = image[y0:y1, x0:x1]
+
+# cv2.imwrite("Stage_1_Output_cropped_images/title_block_cropped.png", crop) #saving the cropped image in the output folder
+
+# now lets make a generic crop function that can work for lists with multiple bounding boxes and also for the ones with empty lists
+
+def crop_and_save_image(bounding_boxes, image_name):
+    for i in range (len(bounding_boxes)):
+        bounding_box = bounding_boxes[i]
+        x0,y0,x1,y1 = bounding_box
+        
+        crop = image [y0:y1, x0:x1]
+        cv2.imwrite(f"Stage_1_Output_cropped_images/{image_name}_{i+1}.png", crop)
+
+
+crop_and_save_image(flat_pattern_pixel_bounding_box, "flat_pattern_pixel_bounding_box")
+crop_and_save_image(orthographic_view_pixel_bounding_box, "orthographic_view_pixel_bounding_box")
+crop_and_save_image(isometric_view_pixel_bounding_box, "isometric_view_pixel_bounding_box")
+crop_and_save_image(section_view_pixel_bounding_box, "section_view_pixel_bounding_box") 
+crop_and_save_image(title_block_pixel_bounding_box, "title_block_pixel_bounding_box")
