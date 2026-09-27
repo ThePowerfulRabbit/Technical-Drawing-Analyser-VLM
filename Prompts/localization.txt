@@ -38,7 +38,7 @@ IMPORTANT BOUNDING BOX RULES:
  Do not cut off any part of a view.
  Do not merge separate views into one bounding box.
  
- if there are multilple objects with same region types, make a separate bounding box for that region under the same category
+ if there are multiple objects with same region types, make a separate bounding box for that region under the same category
  
  If a region type is not present, return an empty list for that category.
  
