@@ -33,7 +33,8 @@ response = ollama.chat(
                         1. "title_block": The entire metadata table in the bottom-right corner (include revisions, tolerances, company logos).
                         2. "orthographic_view": 2D projected engineering views (front, top, side) including their surrounding dimension lines.
                         3. "isometric_view": 3D projected views of the component.
-                        4. "flat_pattern": Unfolded sheet metal layout views, if present.
+                        4. "section_view": Sectional view of a component showing an internal cut.
+                        5. "flat_pattern": Unfolded sheet metal layout views, if present.
                         
                         Return ONLY a valid JSON object matching this exact schema:
                         {
@@ -74,17 +75,17 @@ print(repr(response["message"]["content"])) #repr() is used to display any empty
 #    [
 #     {
 #       "label": "title_block",
-#       "box_2d": [94, 774, 951, 974],
+#       "box": [94, 774, 951, 974],
 #       "conf": 0.95
 #     },
 #     {
 #       "label": "orthographic_view",
-#       "box_2d": [174, 170, 524, 670],
+#       "box": [174, 170, 524, 670],
 #       "conf": 0.95
 #     },
 #     {
 #       "label": "orthographic_view",
-#       "box_2d": [700, 170, 780, 670],
+#       "box": [700, 170, 780, 670],
 #       "conf": 0.95
 #     }
 #   ]
@@ -105,4 +106,37 @@ json_data = json.loads(json_string)
 # Output:
 # {'regions': [{'label': 'title_block', 'box': [93, 774, 951, 974], 'conf': 0.95}, {'label': 'orthographic_view', 'box': [120, 168, 520, 670], 'conf': 0.95}, {'label': 'orthographic_view', 'box': [700, 175, 780, 665], 'conf': 0.95}]}
 
-regions = json_data("regions")
+regions = json_data["regions"]
+
+#lets make separate lists for each category so that previously made functions for cropping and saving can be reused here
+flat_pattern_normalised_box = []
+orthographic_view_normalised_box = []
+isometric_view_normalised_box = []
+section_view_normalised_box = []
+title_block_normalised_box = []
+
+for i in regions:
+  label = i["label"] # take the value of label of one particular dictionary in the list regions and store it in a separate variable
+  box = i["box"]
+  
+  if label == "orthographic_view":
+    orthographic_view_normalised_box.append(box)
+    
+  elif label == "isometric_view":
+    isometric_view_normalised_box.append(box)
+    
+  elif label == "section_view":
+    section_view_normalised_box.append(box)
+    
+  elif label == "flat_pattern":
+    flat_pattern_normalised_box.append(box)
+    
+  elif label == "title_block":
+    title_block_normalised_box.append(box)
+
+print("Parsed Output:")
+print("Flat Pattern:", flat_pattern_normalised_box)
+print("Orthographic View:", orthographic_view_normalised_box )
+print("Isometric View:", isometric_view_normalised_box)
+print("Section View", section_view_normalised_box)
+print("Title Block", title_block_normalised_box)
