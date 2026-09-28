@@ -3,47 +3,56 @@ import json
 
 # Lets now import all the images in Stage_1_Output_cropped_images folder and store them in a list
 import os
-folder_path = "Stage_1_Output_cropped_images"
+# folder_path = "Stage_1_Output_cropped_images"
+folder_path = "images/Localization output (just for reference)/003_redacted"
 
+image_files = os.listdir(folder_path)
 
-response = ollama.chat(
+#lets read the prompt text from a separate file as its getting a bit cluttered here:
+file = open("Prompts/Classification.txt", "r")
+prompt = file.read()
+file.close()
+
+#lets create an empty list to store class of every cropped drawing
+classes = []
+
+for i in range(0,len(image_files)):
     
-    model = "qwen3-vl:8b-instruct",
-    messages = [
-        {
-            "role" : "user",
-            "content": "Classify the component shown in this engineering drawing. Return a JSON object with key : 'class', the value must be either 'Sheet' or 'tube'",
-            "images" : [image_path]
-        }
-    ]
+    image_path = os.path.join(folder_path, image_files[i]) # Joining the path because image_files contain name of the images only while ollama needs complete image path as input
+    response = ollama.chat(
+
+        model = "qwen3-vl:8b-instruct",
+        messages = [
+            {
+                "role" : "user",
+                "content": prompt,
+                "images" : [image_path]
+            }
+        ]
+    ) # here respose is a python dictionary inside which the output of the model will be saved
     
-) # here respose is a python dictionary inside which the output of the model will be saved
+    #since its a nested dictionary the hierarchy is like this:
+    # response:
+    #     message:
+    #         role
+    #         content
+    #we want to access the content only
+    
+    print(response["message"]["content"])
+    #lets parse the string into json
+    
+    json_data = json.loads(response["message"]["content"])
+    drawing_class = json_data["class"]
+    classes.append(drawing_class) # every class will be stored inside the classes list
 
-#since its a nested dictionary the hierarchy is like this:
-# response:
-#     message:
-#         role
-#         content
-#we want to access the content only
+#now lets take the most repeated class value to display as the final class:
 
-# message = response["message"] # retrieve information associated with "message key"
-# content = message["content"] # retrieve information associated with "content" key
-# print(content)
+no_sheet = classes.count("sheet")
+no_tube = classes.count("Tube")
 
-# or i can just do this:
-print(response["message"]["content"])
-# output:
-# {
-#   "class": "Sheet"
-# }
-# Now lets try to extract the class name from this output and store it in a variable
+if (no_sheet > no_tube):
+    final_classification = "sheet"
+else:
+    final_classification = "Tube"
 
-# right now the output is a string, we will first parse the JSON string into python dictionary
-
-json_data = json.loads(response["message"]["content"]) # Here we are converting the content of "content"(which is a string in json format) in to python dictionary
-
-drawing_class = json_data["class"] # so now we can index the value of the key "class" and store it in a variable
-
-print("Class output:", drawing_class)
-# Class output: Sheet 
-# Now we can easily ask the model to give more output while still being able to store class data in a separate variable
+print("Final Classification:", final_classification)
