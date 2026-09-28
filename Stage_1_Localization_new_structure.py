@@ -3,6 +3,16 @@ import json
 import pymupdf
 import cv2
 
+
+# Adding a small code snippet here to clear the Stage_1_Output_cropped_images folder so that its empty on each new run
+import os
+import shutil
+
+output_folder = "Stage_1_Output_cropped_images"
+if os.path.exists(output_folder):
+    shutil.rmtree(output_folder)
+os.makedirs(output_folder)
+
 # Importing the pdf: (Refer to the pymupdf cheatsheet inside the cheatsheet folder for references)
 input_pdf_path = "Input_pdfs/002_redacted.pdf"
 pdf = pymupdf.open(input_pdf_path)
@@ -26,59 +36,7 @@ response = ollama.chat(
     messages = [
         {
             "role" : "user",
-            "content" :"""You are an expert engineering drawing parser.
-                        Analyze this technical drawing image and detect ALL distinct visual components on the page.
-                        
-                        Extract bounding boxes in 0-1000 normalized coordinates [x0, y0, x1, y1] for every instance of:
-                        1. "title_block": The entire metadata table in the bottom-right corner (include revisions, tolerances, company logos).
-                        2. "orthographic_view": 2D projected engineering views (front, top, side) including their surrounding dimension lines.
-                        3. "isometric_view": 3D projected views of the component.
-                        4. "section_view": Sectional view of a component showing an internal cut.
-                        5. "flat_pattern": Unfolded sheet metal layout views, if present.
-                        
-                        When estimating the bounding box, prioritize COMPLETE CONTENT over a tight bounding box. 
-                        If uncertain whether a line belongs inside the region, include it rather than cropping it.
-                        
-                        For every detected region, the bounding box must extend slightly beyond the visible content of the region.
-                        Leave a small amount of empty whitespace between the outermost drawing content and every bounding-box boundary.
-                        Do NOT place the bounding-box boundary directly on the drawing geometry, dimension lines, arrows, or annotations.
-                        The margin should be large enough to ensure that no part of the drawing is clipped when the region is cropped, but should not unnecessarily include neighboring regions.
-                        
-                        For orthographic_view specifically, make sure the entire physical part, including all of its edges, is inside the bounding box with visible whitespace around it.
-                        For narrow orthographic views, do not make the bounding box tightly fit the narrow geometry. The bounding box should include sufficient horizontal whitespace on both sides so that the view is clearly visible as a standalone crop.
-                        
-                        Only include a region if it is actually present in the image.
-                        If multiple instances of the same region type are present, create a separate entry for each instance.
-                        Do not stop after detecting one region. Inspect the entire page for all region types before returning the JSON.
-                        
-                        Return ONLY a valid JSON object matching this exact schema:
-                          {
-                            "regions": [
-                              {
-                                "label": "title_block",
-                                "box": [x0, y0, x1, y1],
-                                "conf": 0.95
-                              },
-                              {
-                                "label": "orthographic_view",
-                                "box": [x0, y0, x1, y1],
-                                "conf": 0.95
-                              },
-                              {
-                                "label": "orthographic_view",
-                                "box": [x0, y0, x1, y1],
-                                "conf": 0.95
-                              },
-                              {
-                                "label": "section_view",
-                                "box": [x0, y0, x1, y1],
-                                "conf": 0.95
-                              }
-                            ]
-                          }
-                          
-                        """,
-                        
+            "content" :prompt,
             "images": [image_path]  
         }
     ],
