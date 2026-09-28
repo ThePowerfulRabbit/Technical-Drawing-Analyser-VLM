@@ -3,8 +3,18 @@ import json
 import pymupdf
 import cv2
 
+
+# Adding a small code snippet here to clear the Stage_1_Output_cropped_images folder so that its empty on each new run
+import os
+import shutil
+
+output_folder = "Stage_1_Output_cropped_images"
+if os.path.exists(output_folder):
+    shutil.rmtree(output_folder)
+os.makedirs(output_folder)
+
 # Importing the pdf: (Refer to the pymupdf cheatsheet inside the cheatsheet folder for references)
-input_pdf_path = "Input_pdfs/002_redacted.pdf"
+input_pdf_path = "Input_pdfs/001_redacted.pdf"
 pdf = pymupdf.open(input_pdf_path)
 
 page = pdf[0] #first page
@@ -27,7 +37,7 @@ response = ollama.chat(
         {
             "role" : "user",
             "content" :prompt,
-            "images": [image_path]
+            "images": [image_path]  
         }
     ],
     format = "json",
@@ -46,41 +56,85 @@ response = ollama.chat(
 #         content
 #we want to access the content only
 
-print(repr(response["message"]["content"])) #repr() is used to display any empty strings as output
+# print(repr(response["message"]["content"])) #repr() is used to display any empty strings as output
 
-# now lets parse the json and store the coordinates in new variables
-json_data = json.loads(response["message"]["content"])
+# Output is: 
+# {
+#   "regions": 
+#    [
+#     {
+#       "label": "title_block",
+#       "box": [94, 774, 951, 974],
+#       "conf": 0.95
+#     },
+#     {
+#       "label": "orthographic_view",
+#       "box": [174, 170, 524, 670],
+#       "conf": 0.95
+#     },
+#     {
+#       "label": "orthographic_view",
+#       "box": [700, 170, 780, 670],
+#       "conf": 0.95
+#     }
+#   ]
+# }
 
-flat_pattern = json_data["flat_pattern"]
-orthographic_view = json_data["orthographic_view"]
-isometric_view = json_data["isometric_view"]
-section_view = json_data["section_view"]
-title_block = json_data["title_block"]
+# I have entirely changed the output structure right now.
+# Rather than storing different views in their separate lists,
+# we are storing every view in one list called "regions" where we assign labels for each block
+# The output is a Json which has one key called "regions" whose value is a list
+# And the list contains dictionaries for each detected region with 3 key value pairs. the keys are label, box and conf
 
-# # parsed output:
-# print("Parsed Output:")
-# print("Flat Pattern:", flat_pattern)
-# print("Orthographic View:", orthographic_view )
-# print("Isometric View:", isometric_view)
-# print("Section View", section_view)
-# print("Title Block", title_block)
+# Lets parse the JSON now to store the output in new variables
+# Refer to the Json cheatsheet attached inside the Cheatsheets folder for reference
+json_string = response["message"]["content"]
+json_data = json.loads(json_string)
 
+# print(json_data)
 # Output:
-# Parsed Output:
-# Flat Pattern: []
-# Orthographic View: [[100, 100, 500, 650], [650, 100, 750, 650]]
-# Isometric View: []
-# Section View []
-# Title Block [[100, 750, 950, 950]]
+# {'regions': [{'label': 'title_block', 'box': [93, 774, 951, 974], 'conf': 0.95}, {'label': 'orthographic_view', 'box': [120, 168, 520, 670], 'conf': 0.95}, {'label': 'orthographic_view', 'box': [700, 175, 780, 665], 'conf': 0.95}]}
+
+regions = json_data["regions"]
+
+#lets make separate lists for each category so that previously made functions for cropping and saving can be reused here
+flat_pattern_normalised_box = []
+orthographic_view_normalised_box = []
+isometric_view_normalised_box = []
+section_view_normalised_box = []
+title_block_normalised_box = []
+
+# let's write a loop to cycle through all the output dictionries and store bounding boxes of each category to its own dedicated list
+for region in regions:
+  label = region["label"] # take the value of label of one particular dictionary in the list regions and store it in a separate variable
+  box = region["box"]
+  
+  if label == "orthographic_view":
+    orthographic_view_normalised_box.append(box)
+    
+  elif label == "isometric_view":
+    isometric_view_normalised_box.append(box)
+    
+  elif label == "section_view":
+    section_view_normalised_box.append(box)
+    
+  elif label == "flat_pattern":
+    flat_pattern_normalised_box.append(box)
+    
+  elif label == "title_block":
+    title_block_normalised_box.append(box)
+
+print("Parsed Output:")
+print("Flat Pattern:", flat_pattern_normalised_box)
+print("Orthographic View:", orthographic_view_normalised_box )
+print("Isometric View:", isometric_view_normalised_box)
+print("Section View", section_view_normalised_box)
+print("Title Block", title_block_normalised_box)
 
 image = cv2.imread(image_path) # read the image converted from pdf input to get image width and image height
 image_height, image_width, channels = image.shape  #image.shape returns [height, width, channels]
 
-# print("Image height:",image_height)
-# print("Image width:",image_width)
-
 # Now lets make a function for changing the normalized bounding box coordinates to pixel values
-
 def normalized_to_pixel(image_height, image_width, bounding_boxes):
     # since bounding_boxes is a collection of list each with 4 coordinates in form [x0,y0,x1,y1]
     boxes = []
@@ -97,21 +151,56 @@ def normalized_to_pixel(image_height, image_width, bounding_boxes):
         boxes.append([int(x0),int(y0),int(x1),int(y1)])  #typecasting to int because pixel coordinates must be integers
     return boxes
 
-# lets scale the coordinates and crop the image right at these coordinates
+
+# lets crop the images
 # opencv can directly crop and save the images with this function: crop = image[y0:y1, x0:x1]
 
-# first lets normaize the bounding boxes into pixel coordinates:
-flat_pattern_pixel_bounding_box = normalized_to_pixel(image_height, image_width, flat_pattern)
-orthographic_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, orthographic_view)
-isometric_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, isometric_view)
-section_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, section_view)
-title_block_pixel_bounding_box = normalized_to_pixel(image_height, image_width, title_block)
+# first lets un-normalise the bounding boxes into pixel coordinates:
+flat_pattern_pixel_bounding_box = normalized_to_pixel(image_height, image_width, flat_pattern_normalised_box)
+orthographic_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, orthographic_view_normalised_box)
+isometric_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, isometric_view_normalised_box)
+section_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, section_view_normalised_box)
+title_block_pixel_bounding_box = normalized_to_pixel(image_height, image_width, title_block_normalised_box)
 
-print("flat_pattern_pixel_bounding_box:",flat_pattern_pixel_bounding_box)
-print("orthographic_view_pixel_bounding_box:",orthographic_view_pixel_bounding_box)
-print("isometric_view_pixel_bounding_box:",isometric_view_pixel_bounding_box)
-print("section_view_pixel_bounding_box:",section_view_pixel_bounding_box)
-print("title_block_pixel_bounding_box:",title_block_pixel_bounding_box)
+
+# Since the VLM now outputs a tight bounding box around the object lets make a function to add a small margin to the bounding box and expand it a little
+def add_margin(bounding_boxes):
+  
+  expanded_boxes = []  # here we store all the bounding boxes in the input bounding boxes list after expanding
+
+  for i in range (0, len(bounding_boxes)):
+    bounding_box = bounding_boxes[i]
+    x0,y0,x1,y1 = bounding_box
+    
+    bbox_width = x1 - x0
+    bbox_height = y1 - y0
+    
+    height_margin = 0.05 * bbox_height  # 5% of the height of the bounding box
+    width_margin = 0.05 * bbox_width 
+    
+    # x0 = x0 - width_margin
+    # x1 = x1 + width_margin
+    # y0 = y0 - height_margin
+    # y1 = y1 + height_margin
+    # #so it gives error when i do this because the width margin is too large and it goes out of the image.
+    #so lets add a maximum value limiter
+    
+    x0 = max(0, x0 - width_margin)  # so the basic idea is if the margin is too large and goes outside of the image then the value of x0 - width_margin will be negative and max() chooses the maximum value between its input values. we have 0 as another input so it will choose 0 as the maximum value and hence x0 will be set to 0 and not go outside of the image.
+    x1 = min(image_width, x1 + width_margin)
+    y0 = max(0, y0 - height_margin)
+    y1 = min(image_height, y1 + height_margin)
+    
+    
+    expanded_boxes.append([int(x0),int(y0),int(x1),int(y1)])
+  
+  return expanded_boxes
+
+#lets now make a bounding box with some expansion for each region
+flat_pattern_expanded_bounding_box = add_margin(flat_pattern_pixel_bounding_box)
+orthographic_view_expanded_bounding_box = add_margin(orthographic_view_pixel_bounding_box)
+isometric_view_expanded_bounding_box = add_margin(isometric_view_pixel_bounding_box)  
+section_view_expanded_bounding_box = add_margin(section_view_pixel_bounding_box)
+title_block_expanded_bounding_box = add_margin(title_block_pixel_bounding_box)
 
 # # now lets crop the images and save them in the output folder
 # x0, y0, x1, y1 = title_block_pixel_bounding_box[0] #since there is only one title block, we can directly access the first element of the list
@@ -120,7 +209,6 @@ print("title_block_pixel_bounding_box:",title_block_pixel_bounding_box)
 # cv2.imwrite("Stage_1_Output_cropped_images/title_block_cropped.png", crop) #saving the cropped image in the output folder
 
 # now lets make a generic crop function that can work for lists with multiple bounding boxes and also for the ones with empty lists
-
 def crop_and_save_image(bounding_boxes, image_name):
     for i in range (len(bounding_boxes)):
         bounding_box = bounding_boxes[i]
@@ -130,8 +218,9 @@ def crop_and_save_image(bounding_boxes, image_name):
         cv2.imwrite(f"Stage_1_Output_cropped_images/{image_name}_{i+1}.png", crop)
 
 
-crop_and_save_image(flat_pattern_pixel_bounding_box, "flat_pattern_pixel_bounding_box")
-crop_and_save_image(orthographic_view_pixel_bounding_box, "orthographic_view_pixel_bounding_box")
-crop_and_save_image(isometric_view_pixel_bounding_box, "isometric_view_pixel_bounding_box")
-crop_and_save_image(section_view_pixel_bounding_box, "section_view_pixel_bounding_box") 
-crop_and_save_image(title_block_pixel_bounding_box, "title_block_pixel_bounding_box")
+
+crop_and_save_image(flat_pattern_expanded_bounding_box, "flat_pattern")
+crop_and_save_image(orthographic_view_expanded_bounding_box, "orthographic_view")
+crop_and_save_image(isometric_view_expanded_bounding_box, "isometric_view")
+crop_and_save_image(section_view_expanded_bounding_box, "section_view") 
+crop_and_save_image(title_block_expanded_bounding_box, "title_block")

@@ -1,0 +1,137 @@
+import ollama
+import json
+import pymupdf
+import cv2
+
+# Importing the pdf: (Refer to the pymupdf cheatsheet inside the cheatsheet folder for references)
+input_pdf_path = "Input_pdfs/001_redacted.pdf"
+pdf = pymupdf.open(input_pdf_path)
+
+page = pdf[0] #first page
+
+pix = page.get_pixmap(dpi = 200) #increasing pixel density with dpi = 200 to give the model more detailed image
+pix.save("images/page_0.png")
+pdf.close()
+
+image_path = "images/page_0.png"
+
+#lets read the prompt text from a separate file as its getting a bit cluttered here:
+file = open("Prompts/localization_old.txt", "r")
+prompt = file.read()
+file.close()
+
+print("Sending image to model...")
+response = ollama.chat(
+    model = "qwen3-vl:8b-instruct", #changing the model to tne instruct varient because the normal one just kept thinking and did nothing other than thinking
+    messages = [
+        {
+            "role" : "user",
+            "content" :prompt,
+            "images": [image_path]
+        }
+    ],
+    format = "json",
+    
+    options = {
+        "num_ctx" : 8192, # image + text prompt + model's output must all fit within 8192 tokens combined. it consumes more vram when i increase this number
+        "temperature" : 0
+        # "num_predict" : 4000 #this limit is the output token limiter. It limits the maximum token use for generating output
+    }
+)
+
+#since its a nested dictionary the hierarchy is like this:
+# response:
+#     message:
+#         role
+#         content
+#we want to access the content only
+
+print(repr(response["message"]["content"])) #repr() is used to display any empty strings as output
+
+# now lets parse the json and store the coordinates in new variables
+json_data = json.loads(response["message"]["content"])
+
+flat_pattern = json_data["flat_pattern"]
+orthographic_view = json_data["orthographic_view"]
+isometric_view = json_data["isometric_view"]
+section_view = json_data["section_view"]
+title_block = json_data["title_block"]
+
+# # parsed output:
+# print("Parsed Output:")
+# print("Flat Pattern:", flat_pattern)
+# print("Orthographic View:", orthographic_view )
+# print("Isometric View:", isometric_view)
+# print("Section View", section_view)
+# print("Title Block", title_block)
+
+# Output:
+# Parsed Output:
+# Flat Pattern: []
+# Orthographic View: [[100, 100, 500, 650], [650, 100, 750, 650]]
+# Isometric View: []
+# Section View []
+# Title Block [[100, 750, 950, 950]]
+
+image = cv2.imread(image_path) # read the image converted from pdf input to get image width and image height
+image_height, image_width, channels = image.shape  #image.shape returns [height, width, channels]
+
+# print("Image height:",image_height)
+# print("Image width:",image_width)
+
+# Now lets make a function for changing the normalized bounding box coordinates to pixel values
+
+def normalized_to_pixel(image_height, image_width, bounding_boxes):
+    # since bounding_boxes is a collection of list each with 4 coordinates in form [x0,y0,x1,y1]
+    boxes = []
+    
+    for i in range(0, len(bounding_boxes)):
+        bounding_box = bounding_boxes[i]
+        x0,y0,x1,y1 = bounding_box
+        
+        #lets scale them from 0-1000 to 0-image_width and 0-image_height
+        x0 = (x0/1000) * image_width
+        y0 = (y0/1000) * image_height
+        x1 = (x1/1000) * image_width
+        y1 = (y1/1000) * image_height
+        boxes.append([int(x0),int(y0),int(x1),int(y1)])  #typecasting to int because pixel coordinates must be integers
+    return boxes
+
+# lets scale the coordinates and crop the image right at these coordinates
+# opencv can directly crop and save the images with this function: crop = image[y0:y1, x0:x1]
+
+# first lets normaize the bounding boxes into pixel coordinates:
+flat_pattern_pixel_bounding_box = normalized_to_pixel(image_height, image_width, flat_pattern)
+orthographic_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, orthographic_view)
+isometric_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, isometric_view)
+section_view_pixel_bounding_box = normalized_to_pixel(image_height, image_width, section_view)
+title_block_pixel_bounding_box = normalized_to_pixel(image_height, image_width, title_block)
+
+print("flat_pattern_pixel_bounding_box:",flat_pattern_pixel_bounding_box)
+print("orthographic_view_pixel_bounding_box:",orthographic_view_pixel_bounding_box)
+print("isometric_view_pixel_bounding_box:",isometric_view_pixel_bounding_box)
+print("section_view_pixel_bounding_box:",section_view_pixel_bounding_box)
+print("title_block_pixel_bounding_box:",title_block_pixel_bounding_box)
+
+# # now lets crop the images and save them in the output folder
+# x0, y0, x1, y1 = title_block_pixel_bounding_box[0] #since there is only one title block, we can directly access the first element of the list
+# crop = image[y0:y1, x0:x1]
+
+# cv2.imwrite("Stage_1_Output_cropped_images/title_block_cropped.png", crop) #saving the cropped image in the output folder
+
+# now lets make a generic crop function that can work for lists with multiple bounding boxes and also for the ones with empty lists
+
+def crop_and_save_image(bounding_boxes, image_name):
+    for i in range (len(bounding_boxes)):
+        bounding_box = bounding_boxes[i]
+        x0,y0,x1,y1 = bounding_box
+        
+        crop = image [y0:y1, x0:x1]
+        cv2.imwrite(f"Stage_1_Output_cropped_images/{image_name}_{i+1}.png", crop)
+
+
+crop_and_save_image(flat_pattern_pixel_bounding_box, "flat_pattern_pixel_bounding_box")
+crop_and_save_image(orthographic_view_pixel_bounding_box, "orthographic_view_pixel_bounding_box")
+crop_and_save_image(isometric_view_pixel_bounding_box, "isometric_view_pixel_bounding_box")
+crop_and_save_image(section_view_pixel_bounding_box, "section_view_pixel_bounding_box") 
+crop_and_save_image(title_block_pixel_bounding_box, "title_block_pixel_bounding_box")

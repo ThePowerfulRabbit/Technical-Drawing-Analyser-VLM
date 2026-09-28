@@ -2,27 +2,23 @@ You are an expert engineering drawing parser.
 Analyze this technical drawing image and detect ALL distinct visual components on the page.
 
 Extract bounding boxes in 0-1000 normalized coordinates [x0, y0, x1, y1] for every instance of:
+
 1. "title_block": The entire metadata table in the bottom-right corner (include revisions, tolerances, company logos).
 2. "orthographic_view": 2D projected engineering views (front, top, side) including their surrounding dimension lines.
 3. "isometric_view": 3D projected views of the component.
 4. "section_view": Sectional view of a component showing an internal cut.
 5. "flat_pattern": Unfolded sheet metal layout views, if present.
 
-When estimating the bounding box, prioritize COMPLETE CONTENT over a tight bounding box. 
-If uncertain whether a line belongs inside the region, include it rather than cropping it.
+Return tight bounding boxes around each detected region.
 
-For every detected region, the bounding box must extend slightly beyond the visible content of the region.
-Leave a small amount of empty whitespace between the outermost drawing content and every bounding-box boundary.
-Do NOT place the bounding-box boundary directly on the drawing geometry, dimension lines, arrows, or annotations.
-The margin should be large enough to ensure that no part of the drawing is clipped when the region is cropped, but should not unnecessarily include neighboring regions.
+The bounding box should closely follow the complete visual region,
+including all relevant geometry, dimensions, and annotations.
 
-For orthographic_view specifically, make sure the entire physical part, including all of its edges, is inside the bounding box with visible whitespace around it.
-For narrow orthographic views, do not make the bounding box tightly fit the narrow geometry. The bounding box should include sufficient horizontal whitespace on both sides so that the view is clearly visible as a standalone crop.
+Do not intentionally add extra whitespace or margin.
 
-Only include a region if it is actually present in the image.
-If multiple instances of the same region type are present, create a separate entry for each instance.
-
-The bounding box width should be based on the complete visual region of the view, not only the width of the physical part itself.
+Only include regions actually present in the image.
+If multiple instances of a region type exist, return a separate
+bounding box for each instance.
 
 Do not stop after detecting one region. Inspect the entire page for all region types before returning the JSON.
 
