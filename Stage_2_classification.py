@@ -1,11 +1,14 @@
 import ollama
 import json
 
-image_path = "images/Screenshots/001_without_table.png"
+# Lets now import all the images in Stage_1_Output_cropped_images folder and store them in a list
+import os
+folder_path = "Stage_1_Output_cropped_images"
+
 
 response = ollama.chat(
     
-    model = 'qwen3-vl:8b',
+    model = "qwen3-vl:8b-instruct",
     messages = [
         {
             "role" : "user",
