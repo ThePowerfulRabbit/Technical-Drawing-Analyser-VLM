@@ -92,3 +92,16 @@ print("Evidence/Explanation:", evidence)
 #     "evidence": "The drawing includes the term 'ADAPTER PLATE' in the title block, which directly indicates a sheet-metal component. Additionally, the cross-section view shows a solid, flat profile with chamfered edges (5 X 45°) and a rounded corner (R5), which are typical of sheet metal fabrication rather than tube construction. The overall shape is consistent with a flat plate, not a hollow profile."
 # }
 # Final Classification: Sheet
+
+# Adding a small code snippet here to clear the json/Classification folder so that its empty on each new run
+import shutil
+
+output_folder = "json/Classification"
+if os.path.exists(output_folder):
+    shutil.rmtree(output_folder)
+os.makedirs(output_folder)
+
+# Lets convert the output python list into a json file and export it:
+json_file = open("json/Classification/Classification.json", "w")
+json.dump(json_data,json_file, indent=4)
+json_file.close()

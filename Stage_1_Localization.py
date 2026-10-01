@@ -4,11 +4,16 @@ import pymupdf
 import cv2
 
 
-# Adding a small code snippet here to clear the Stage_1_Output_cropped_images folder so that its empty on each new run
+# Adding a small code snippet here to clear the Stage_1_Output_cropped_images and json/Localization folder so that its empty on each new run
 import os
 import shutil
 
 output_folder = "Stage_1_Output_cropped_images"
+if os.path.exists(output_folder):
+    shutil.rmtree(output_folder)
+os.makedirs(output_folder)
+
+output_folder = "json/Localization"
 if os.path.exists(output_folder):
     shutil.rmtree(output_folder)
 os.makedirs(output_folder)
@@ -35,7 +40,7 @@ response = ollama.chat(
     model = "qwen3-vl:8b-instruct", #changing the model to tne instruct varient because the normal one just kept thinking and did nothing other than thinking
     messages = [
         {
-            "role" : "user",
+            "role" : "user", 
             "content" :prompt,
             "images": [image_path]  
         }
@@ -224,3 +229,9 @@ crop_and_save_image(orthographic_view_expanded_bounding_box, "orthographic_view"
 crop_and_save_image(isometric_view_expanded_bounding_box, "isometric_view")
 crop_and_save_image(section_view_expanded_bounding_box, "section_view") 
 crop_and_save_image(title_block_expanded_bounding_box, "title_block")
+
+
+# Lets convert the output python list into a json file and export it:
+json_file = open("json/Localization/Localization.json", "w")
+json.dump(json_data,json_file, indent=4)
+json_file.close()
