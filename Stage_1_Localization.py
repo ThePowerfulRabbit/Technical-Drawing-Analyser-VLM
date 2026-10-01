@@ -35,7 +35,7 @@ file = open("Prompts/localization.txt", "r")
 prompt = file.read()
 file.close()
 
-print("Sending image to model...")
+print("Starting localization")
 response = ollama.chat(
     model = "qwen3-vl:8b-instruct", #changing the model to tne instruct varient because the normal one just kept thinking and did nothing other than thinking
     messages = [
@@ -235,3 +235,5 @@ crop_and_save_image(title_block_expanded_bounding_box, "title_block")
 json_file = open("json/Localization/Localization.json", "w")
 json.dump(json_data,json_file, indent=4)
 json_file.close()
+
+print("Localization Complete")

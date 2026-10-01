@@ -11,6 +11,8 @@ json_file = open("json/Classification/Classification.json", "r")
 classification_data = json.load(json_file)
 classification_result = classification_data["class"]
 
+print("Starting Bend Count")
+
 if (classification_result == "Sheet"):
     # Storing path of every image in the required folder in a list. (same thing already done and explained in classification.py)
     image_paths = []
@@ -24,8 +26,6 @@ if (classification_result == "Sheet"):
     file = open("Prompts/Bend_Count.txt", "r")
     prompt = file.read()
     file.close()
-    
-    print("Sending images to the model")
     
     response = ollama.chat(
         model = "qwen3-vl:8b-instruct",
@@ -68,3 +68,5 @@ os.makedirs(output_folder)
 json_file = open("json/Bend_count/Bend_count.json", "w")
 json.dump(json_data,json_file, indent=4)
 json_file.close()
+
+print("Bend Count Complete")

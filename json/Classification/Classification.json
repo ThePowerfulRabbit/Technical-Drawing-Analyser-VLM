@@ -1,5 +1,5 @@
 {
     "class": "Sheet",
     "confidence": 1.0,
-    "evidence": "The drawing explicitly labels 'Abwicklung' (unfolded view) and 'Blechdicke: 3mm' (sheet thickness), which are definitive cues for sheet-metal fabrication. Additionally, the component is described as a 'BRACKET' and shown with flat patterns and cutouts, consistent with sheet metal, not tube construction."
+    "evidence": "The drawing explicitly labels 'Abwicklung' (unfolded view) and 'Blechdicke: 3mm' (sheet thickness), which are direct indicators of sheet-metal fabrication. The flat pattern view and the presence of 'Blech' (sheet) in the material description further confirm it is a sheet component."
 }

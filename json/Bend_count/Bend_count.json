@@ -1,6 +1,6 @@
 {
     "num_bends": 2,
     "bend_confidence": 1.0,
-    "bend_evidence": "Two bends from U-channel shape in isometric and side views.",
+    "bend_evidence": "Two bends from U-channel profile in side view.",
     "flags": []
 }

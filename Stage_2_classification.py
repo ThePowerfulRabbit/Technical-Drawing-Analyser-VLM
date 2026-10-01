@@ -23,6 +23,8 @@ file = open("Prompts/Classification.txt", "r")
 prompt = file.read()
 file.close()
 
+print("Starting Classification")
+
 response = ollama.chat(
     model = "qwen3-vl:8b-instruct",
     messages = [
@@ -105,3 +107,5 @@ os.makedirs(output_folder)
 json_file = open("json/Classification/Classification.json", "w")
 json.dump(json_data,json_file, indent=4)
 json_file.close()
+
+print("Classification Complete")
